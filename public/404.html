@@ -1,0 +1,204 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>404 — Lost in The Muzik Vault</title>
+  <link rel="icon" href="/favicon.ico"/>
+  <meta name="theme-color" content="#0b0b0f"/>
+  <style>
+    :root{--bg:#0b0b0f;--panel:rgba(255,255,255,.06);--border:rgba(255,255,255,.08);--text:#fff;--muted:#a3a3a3;--accent:#f472b6;--good:#22c55e;--bad:#ef4444}
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial}
+    .wrap{min-height:100svh;display:grid;place-items:center;padding:28px}
+    .card{width:100%;max-width:840px;border:1px solid var(--border);background:var(--panel);border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+    header{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;background:linear-gradient(180deg,rgba(255,255,255,.06),transparent)}
+    header .dot{width:12px;height:12px;border-radius:50%;background:var(--accent)}
+    header h1{margin:0;font-size:18px}
+    .content{display:grid;grid-template-columns:1fr;gap:16px;padding:16px}
+    @media(min-width:900px){.content{grid-template-columns:520px 1fr}}
+    canvas{display:block;width:520px;height:520px;border:1px solid var(--border);background:radial-gradient(1200px 600px at 50% 0%, rgba(255,255,255,.06), rgba(255,255,255,.02) 45%, transparent 70%), #0e0e13}
+    .side{display:flex;flex-direction:column;gap:12px}
+    .title{font-weight:800;font-size:28px;letter-spacing:.3px}
+    .muted{color:var(--muted);font-size:14px}
+    .stats{display:flex;gap:10px;flex-wrap:wrap}
+    .pill{padding:6px 10px;border:1px solid var(--border);border-radius:999px;background:rgba(255,255,255,.04);font-size:13px}
+    .btnrow{display:flex;gap:10px;flex-wrap:wrap}
+    .btn{cursor:pointer;appearance:none;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--text);padding:10px 14px;border-radius:10px;font-weight:600}
+    .btn.accent{background:var(--accent);border-color:transparent}
+    .footer{padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:13px}
+    a{color:var(--accent);text-decoration:none}
+    a:hover{text-decoration:underline}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <header>
+        <div class="dot"></div>
+        <h1>404 — You hit a dead end. Want to play Snake while you’re here?</h1>
+      </header>
+
+      <div class="content">
+        <canvas id="game" width="520" height="520" aria-label="Snake game"></canvas>
+
+        <div class="side">
+          <div class="title">The Muzik Vault ($TMV)</div>
+          <div class="muted">You’ve reached a page that doesn’t exist. Beat your high score while you’re here, then head back to the vault.</div>
+
+          <div class="stats">
+            <div class="pill">Score: <span id="score">0</span></div>
+            <div class="pill">High Score: <span id="hi">0</span></div>
+            <div class="pill">Speed: <span id="spd">1x</span></div>
+            <div class="pill">Controls: ⬅️⬆️⬇️➡️ or WASD • P to Pause</div>
+          </div>
+
+          <div class="btnrow">
+            <button class="btn accent" id="restart">Restart</button>
+            <a class="btn" href="/">← Back to Home</a>
+            <a class="btn" href="/how-to-buy.html">How to Buy $TMV</a>
+            <a class="btn" href="https://x.com/themuzikvault" target="_blank" rel="noreferrer">Follow on X</a>
+          </div>
+
+          <div class="muted">Tip: Eat the <strong style="color:var(--good)">green beats</strong> to grow. Avoid hitting yourself or the walls!</div>
+        </div>
+      </div>
+
+      <div class="footer">
+        <span>The Muzik Vault — Unlock the Vault. Own the Culture.</span>
+        <span>© TMV</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Simple pixel Snake — arrow keys / WASD, pause with P, localStorage high score.
+    const cv = document.getElementById('game');
+    const ctx = cv.getContext('2d');
+    const scoreEl = document.getElementById('score');
+    const hiEl = document.getElementById('hi');
+    const spdEl = document.getElementById('spd');
+    const restartBtn = document.getElementById('restart');
+
+    const CELL = 20;               // grid size (px)
+    const COLS = cv.width / CELL;  // 26
+    const ROWS = cv.height / CELL; // 26
+
+    let snake, dir, nextDir, food, score, hi, speed, tickMs, loopId, paused;
+
+    function init() {
+      snake = [{x: Math.floor(COLS/2), y: Math.floor(ROWS/2)}];
+      dir = {x:1, y:0}; nextDir = {...dir};
+      food = spawnFood();
+      score = 0;
+      speed = 1; // increases every few foods
+      tickMs = 140; // lower = faster
+      paused = false;
+      draw();
+      updateUI();
+      clearInterval(loopId);
+      loopId = setInterval(step, tickMs);
+    }
+
+    function updateUI(){
+      scoreEl.textContent = score;
+      hi = Math.max(+localStorage.getItem('tmv_hi')||0, score);
+      hiEl.textContent = hi;
+      spdEl.textContent = speed + 'x';
+    }
+
+    function spawnFood(){
+      let f;
+      do {
+        f = {x: Math.floor(Math.random()*COLS), y: Math.floor(Math.random()*ROWS)};
+      } while (snake.some(s => s.x === f.x && s.y === f.y));
+      return f;
+    }
+
+    function step(){
+      if (paused) return;
+      dir = nextDir;
+
+      const head = {x: snake[0].x + dir.x, y: snake[0].y + dir.y};
+
+      // collisions
+      if (head.x < 0 || head.y < 0 || head.x >= COLS || head.y >= ROWS ||
+          snake.some(s => s.x === head.x && s.y === head.y)) {
+        gameOver();
+        return;
+      }
+
+      snake.unshift(head);
+
+      // eat
+      if (head.x === food.x && head.y === food.y) {
+        score++;
+        if (score % 5 === 0 && tickMs > 70) {
+          speed++; tickMs -= 10;
+          clearInterval(loopId); loopId = setInterval(step, tickMs);
+        }
+        food = spawnFood();
+      } else {
+        snake.pop();
+      }
+
+      updateUI();
+      draw();
+    }
+
+    function gameOver(){
+      localStorage.setItem('tmv_hi', Math.max(hi, score));
+      paused = true;
+      ctx.fillStyle = 'rgba(0,0,0,.6)';
+      ctx.fillRect(0,0,cv.width, cv.height);
+      ctx.fillStyle = '#f472b6';
+      ctx.font = 'bold 28px system-ui, Segoe UI, Roboto, Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('Game Over — Press R to Restart', cv.width/2, cv.height/2);
+    }
+
+    function draw(){
+      // board background grid
+      ctx.fillStyle = '#0e0e13';
+      ctx.fillRect(0,0,cv.width, cv.height);
+
+      // faint grid lines
+      ctx.strokeStyle = 'rgba(255,255,255,.04)';
+      ctx.lineWidth = 1;
+      for (let x=0; x<=COLS; x++) { ctx.beginPath(); ctx.moveTo(x*CELL,0); ctx.lineTo(x*CELL,cv.height); ctx.stroke(); }
+      for (let y=0; y<=ROWS; y++) { ctx.beginPath(); ctx.moveTo(0,y*CELL); ctx.lineTo(cv.width,y*CELL); ctx.stroke(); }
+
+      // food
+      ctx.fillStyle = '#22c55e';
+      ctx.fillRect(food.x*CELL, food.y*CELL, CELL, CELL);
+
+      // snake
+      for (let i=0;i<snake.length;i++){
+        const c = snake[i];
+        const t = i===0 ? '#f472b6' : 'rgba(255,255,255,.9)';
+        ctx.fillStyle = t;
+        ctx.fillRect(c.x*CELL, c.y*CELL, CELL, CELL);
+      }
+    }
+
+    // Controls
+    const KEYS = {
+      ArrowLeft:{x:-1,y:0}, ArrowUp:{x:0,y:-1}, ArrowRight:{x:1,y:0}, ArrowDown:{x:0,y:1},
+      a:{x:-1,y:0}, w:{x:0,y:-1}, d:{x:1,y:0}, s:{x:0,y:1},
+    };
+    addEventListener('keydown', e=>{
+      const k = e.key;
+      if (k==='p' || k==='P'){ paused = !paused; return; }
+      if (k==='r' || k==='R'){ init(); return; }
+      if (!KEYS[k]) return;
+      const nd = KEYS[k];
+      // prevent reversing into self
+      if (snake.length>1 && (nd.x===-dir.x && nd.y===-dir.y)) return;
+      nextDir = nd;
+    });
+    restartBtn.addEventListener('click', init);
+
+    init();
+  </script>
+</body>
+</html>
