@@ -21,7 +21,25 @@ export default function App() {
   }, []);
 
   return (
-    <div className="min-h-screen relative bg-gradient-to-b from-gray-950 via-black to-gray-900 text-white antialiased">
+  <div className="min-h-screen bg-gradient-to-b from-gray-950 via-black to-gray-900 text-white antialiased relative">
+      
+      {/* Hero background image */}
+      <div
+        className="absolute inset-0 -z-20 bg-cover bg-center"
+        style={{ backgroundImage: "url('/hero-bg.jpg')" }}
+      />
+      
+      {/* Dark overlay for readability */}
+      <div className="absolute inset-0 -z-10 bg-black/60"></div>
+
+      {/* Subtle noise texture overlay */}
+      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/asfalt-dark.png')] opacity-10 pointer-events-none"></div>
+
+    /&gt;
+    
+    {/* Dark overlay so text is always readable */}
+    <div className="absolute inset-0 -z-10 bg-black/60"></div>
+    
       {/* Subtle noise/texture overlay (inline SVG, no network call) */}
       <div
         className="pointer-events-none absolute inset-0 -z-10 opacity-25 mix-blend-overlay"
